@@ -4,14 +4,10 @@ import re
 from datetime import datetime
 import wikipedia
 import os
-import pickle
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
-from google.auth.transport.requests import Request
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
 
 load_dotenv()
 
@@ -75,7 +71,6 @@ def lagre_fil(filnavn, innhold):
         return "Kunne ikke lagre filen."
 
 def send_epost(mottaker, emne, innhold, avsender=None, passord=None):
-    """Sender e-post via brukerens Gmail"""
     if not avsender or not passord:
         return "E-post ikke satt opp. Fyll inn din Gmail i sidepanelet."
     try:
@@ -93,49 +88,27 @@ def send_epost(mottaker, emne, innhold, avsender=None, passord=None):
         return f"Kunne ikke sende e-post: {str(e)}"
 
 def legg_til_kalender(tittel, dato, tid):
-    """Legger til avtale i Google Kalender"""
+    """Lager ICS-fil som kan importeres i hvilken som helst kalender"""
     try:
-        creds = None
-        SCOPES = ['https://www.googleapis.com/auth/calendar']
-        
-        if "google_token" in st.session_state and st.session_state.google_token:
-            creds = pickle.loads(st.session_state.google_token)
-        
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                # For Streamlit Cloud: les credentials fra secrets
-                if "GOOGLE_CREDENTIALS" in st.secrets:
-                    import tempfile
-                    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as tmp:
-                        tmp.write(st.secrets["GOOGLE_CREDENTIALS"])
-                        tmp.flush()
-                        flow = InstalledAppFlow.from_client_secrets_file(tmp.name, SCOPES)
-                else:
-                    flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-                
-                creds = flow.run_local_server(port=0)
-            
-            st.session_state.google_token = pickle.dumps(creds)
-        
-        service = build('calendar', 'v3', credentials=creds)
-        
-        fra_tid = f"{dato}T{tid}:00+02:00"
         time_delt = tid.split(":")
         slutt_time = int(time_delt[0]) + 1
-        til_tid = f"{dato}T{slutt_time:02d}:{time_delt[1]}:00+02:00"
+        slutt_tid = f"{slutt_time:02d}:{time_delt[1]}"
         
-        avtale = {
-            'summary': tittel,
-            'start': {'dateTime': fra_tid, 'timeZone': 'Europe/Oslo'},
-            'end': {'dateTime': til_tid, 'timeZone': 'Europe/Oslo'},
-        }
+        ics = f"""BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+DTSTART:{dato.replace('-','')}T{tid.replace(':','')}00
+DTEND:{dato.replace('-','')}T{slutt_tid.replace(':','')}00
+SUMMARY:{tittel}
+END:VEVENT
+END:VCALENDAR"""
         
-        service.events().insert(calendarId='primary', body=avtale).execute()
-        return f"Avtale '{tittel}' lagt til {dato} kl. {tid}!"
+        filnavn = f"{tittel.replace(' ','_')}.ics"
+        with open(filnavn, "w") as f:
+            f.write(ics)
+        return f"✅ Kalenderfil '{filnavn}' opprettet! Last ned og åpne for å legge inn i kalenderen."
     except Exception as e:
-        return f"Kunne ikke legge til avtale: {str(e)}"
+        return f"Kunne ikke lage kalenderfil: {str(e)}"
 
 # ========================================
 # SYSTEMBESKJED
@@ -149,7 +122,7 @@ You MUST use tools for:
 - Wikipedia: TOOL: wikipedia(topic)
 - Save file: TOOL: lagre(filename, content)
 - Send email: TOOL: send_epost(recipient, subject, message)
-- Add calendar event: TOOL: kalender(title, date, time) - date as YYYY-MM-DD, time as HH:MM
+- Calendar event: TOOL: kalender(title, date, time) - date as YYYY-MM-DD, time as HH:MM
 
 Reply ONLY with one TOOL: line if you need a tool. Otherwise answer directly."""
 
@@ -172,39 +145,18 @@ with st.sidebar:
     
     st.divider()
     
-    st.header("📅 Kalender (valgfritt)")
-    if st.button("Koble til Google Kalender"):
-        try:
-            creds = None
-            SCOPES = ['https://www.googleapis.com/auth/calendar']
-            
-            if "GOOGLE_CREDENTIALS" in st.secrets:
-                import tempfile
-                with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as tmp:
-                    tmp.write(st.secrets["GOOGLE_CREDENTIALS"])
-                    tmp.flush()
-                    flow = InstalledAppFlow.from_client_secrets_file(tmp.name, SCOPES)
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-            
-            creds = flow.run_local_server(port=0)
-            st.session_state.google_token = pickle.dumps(creds)
-            st.success("✅ Kalender tilkoblet!")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Feil: {e}")
-    
-    if "google_token" in st.session_state and st.session_state.google_token:
-        st.success("✅ Kalender klar!")
-    
+    st.header("📅 Kalender")
+    st.caption("Lager ICS-fil som kan åpnes i alle kalendere (Outlook, Google, Apple)")
+    st.success("✅ Kalender klar!")
+
     st.divider()
-    st.caption("Verktøy: Kalkulator, Dato, Vær, Wikipedia, Lagre, E-post, Kalender")
+    st.caption("🛠️ Verktøy: Kalkulator, Dato, Vær, Wikipedia, Lagre, E-post, Kalender")
 
 # ========================================
 # HOVEDVINDU
 # ========================================
 st.title("🤖 Min KI-Agent")
-st.caption("Assistent med verktøy")
+st.caption("En assistent med kalkulator, dato, vær, Wikipedia, lagring, e-post og kalender")
 
 if "meldinger" not in st.session_state:
     st.session_state.meldinger = [{"role": "system", "content": SYSTEM_MELDING}]
