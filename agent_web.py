@@ -23,7 +23,7 @@ HEADERS = {
 }
 
 # ========================================
-# VERKTØY
+# VERKTOY
 # ========================================
 def kalkulator(uttrykk):
     try:
@@ -32,8 +32,10 @@ def kalkulator(uttrykk):
     except:
         return "Feil i utregning"
 
+
 def dato_og_tid():
     return datetime.now().strftime("%d. %B %Y, klokken %H:%M")
+
 
 def vaer(sted):
     try:
@@ -49,11 +51,13 @@ def vaer(sted):
         naa = vaer_res["current_weather"]
         temp = naa["temperature"]
         vind = naa["windspeed"]
-        forhold = {0: "klart", 1: "delvis skyet", 2: "skyet", 3: "overskyet", 45: "tåke", 51: "lett yr", 61: "regn", 71: "snø", 95: "torden"}
+        forhold = {0: "klart", 1: "delvis skyet", 2: "skyet", 3: "overskyet",
+                   45: "tåke", 51: "lett yr", 61: "regn", 71: "snø", 95: "torden"}
         vaertype = forhold.get(naa["weathercode"], "ukjent")
         return f"I {navn} er det nå {temp}°C, {vaertype}, vind {vind} m/s."
     except:
         return "Kunne ikke hente værvarsel."
+
 
 def sok_wikipedia(emne):
     try:
@@ -62,6 +66,7 @@ def sok_wikipedia(emne):
     except:
         return "Kunne ikke hente informasjon fra Wikipedia."
 
+
 def lagre_fil(filnavn, innhold):
     try:
         with open(filnavn, "w", encoding="utf-8") as f:
@@ -69,6 +74,7 @@ def lagre_fil(filnavn, innhold):
         return f"Fil '{filnavn}' er lagret."
     except:
         return "Kunne ikke lagre filen."
+
 
 def send_epost(mottaker, emne, innhold, avsender=None, passord=None):
     if not avsender or not passord:
@@ -87,28 +93,30 @@ def send_epost(mottaker, emne, innhold, avsender=None, passord=None):
     except Exception as e:
         return f"Kunne ikke sende e-post: {str(e)}"
 
+
 def legg_til_kalender(tittel, dato, tid):
-    """Lager ICS-fil som kan importeres i hvilken som helst kalender"""
+    """Lager ICS-fil og gir nedlastingsknapp"""
     try:
         time_delt = tid.split(":")
         slutt_time = int(time_delt[0]) + 1
         slutt_tid = f"{slutt_time:02d}:{time_delt[1]}"
-        
+
         ics = f"""BEGIN:VCALENDAR
 VERSION:2.0
 BEGIN:VEVENT
-DTSTART:{dato.replace('-','')}T{tid.replace(':','')}00
-DTEND:{dato.replace('-','')}T{slutt_tid.replace(':','')}00
+DTSTART:{dato.replace('-', '')}T{tid.replace(':', '')}00
+DTEND:{dato.replace('-', '')}T{slutt_tid.replace(':', '')}00
 SUMMARY:{tittel}
 END:VEVENT
 END:VCALENDAR"""
-        
-        filnavn = f"{tittel.replace(' ','_')}.ics"
-        with open(filnavn, "w") as f:
-            f.write(ics)
-        return f"✅ Kalenderfil '{filnavn}' opprettet! Last ned og åpne for å legge inn i kalenderen."
+
+        st.session_state.ics_data = ics
+        st.session_state.ics_filnavn = f"{tittel.replace(' ', '_')}.ics"
+
+        return f"✅ Kalenderfil '{st.session_state.ics_filnavn}' klar for nedlasting!"
     except Exception as e:
         return f"Kunne ikke lage kalenderfil: {str(e)}"
+
 
 # ========================================
 # SYSTEMBESKJED
@@ -139,14 +147,14 @@ with st.sidebar:
     bruker_email = st.text_input("Din Gmail", placeholder="deg@gmail.com", key="email_input")
     bruker_passord = st.text_input("App-passord", placeholder="16 tegn", type="password", key="pass_input")
     st.caption("[Lage app-passord](https://myaccount.google.com/apppasswords)")
-    
+
     if bruker_email and bruker_passord:
         st.success("✅ E-post klar!")
-    
+
     st.divider()
-    
+
     st.header("📅 Kalender")
-    st.caption("Lager ICS-fil som kan åpnes i alle kalendere (Outlook, Google, Apple)")
+    st.caption("Lager ICS-fil som kan åpnes i alle kalendere")
     st.success("✅ Kalender klar!")
 
     st.divider()
@@ -226,11 +234,25 @@ if sporsmal := st.chat_input("Skriv melding..."):
                             else:
                                 resultat = "Feil format."
                         elif navn_v == "kalender":
-                            deler = arg.split(",", 2)
-                            if len(deler) == 3:
-                                resultat = legg_til_kalender(deler[0].strip(), deler[1].strip(), deler[2].strip())
+                            import re as re2
+                            arg_clean = arg.replace("'", "").replace('"', "")
+                            tittel_match = re2.search(r"title=(.+?),", arg_clean)
+                            dato_match = re2.search(r"date=(.+?),", arg_clean)
+                            tid_match = re2.search(r"time=(.+)", arg_clean)
+                            if tittel_match and dato_match and tid_match:
+                                resultat = legg_til_kalender(
+                                    tittel_match.group(1).strip(),
+                                    dato_match.group(1).strip(),
+                                    tid_match.group(1).strip()
+                                )
                             else:
-                                resultat = "Feil format. Bruk: kalender(tittel, YYYY-MM-DD, HH:MM)"
+                                deler = arg_clean.split(",")
+                                if len(deler) == 3:
+                                    resultat = legg_til_kalender(
+                                        deler[0].strip(), deler[1].strip(), deler[2].strip()
+                                    )
+                                else:
+                                    resultat = "Kunne ikke tolke kalender-format."
                         else:
                             resultat = f"Ukjent verktøy: {navn_v}"
 
@@ -238,7 +260,9 @@ if sporsmal := st.chat_input("Skriv melding..."):
                             st.markdown(f"📊 Resultat: `{resultat}`")
 
                         st.session_state.meldinger.append({"role": "assistant", "content": svar})
-                        st.session_state.meldinger.append({"role": "user", "content": f"Verktøy-resultat: {resultat}\nSvar brukeren."})
+                        st.session_state.meldinger.append(
+                            {"role": "user", "content": f"Verktøy-resultat: {resultat}\nSvar brukeren."}
+                        )
 
                         r2 = requests.post(URL, headers=HEADERS, json={
                             "model": MODEL,
@@ -260,3 +284,12 @@ if sporsmal := st.chat_input("Skriv melding..."):
         else:
             with st.chat_message("assistant"):
                 st.error(f"Feil: {data}")
+
+# Vis nedlastingsknapp for ICS-fil
+if "ics_data" in st.session_state and st.session_state.ics_data:
+    st.download_button(
+        label=f"📥 Last ned {st.session_state.ics_filnavn}",
+        data=st.session_state.ics_data,
+        file_name=st.session_state.ics_filnavn,
+        mime="text/calendar"
+    )
