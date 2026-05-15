@@ -33,112 +33,188 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
 # ========================================
-# CSS-STYLING
+# CSS-STYLING (MINIMALISTISK CYBERPUNK)
 # ========================================
 st.markdown("""
 <style>
-    /* Hovedbakgrunn */
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+    /* Hovedbakgrunn - dyp svart */
     .stApp {
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+        background: #0a0a0a;
     }
-    
+
+    /* Grid-linjer i bakgrunnen (cyberpunk-signatur) */
+    .stApp::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+    }
+
     /* Chat-meldinger */
     .stChatMessage {
-        border-radius: 15px !important;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+        border-radius: 0px !important;
+        clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
     }
-    
+
     /* Brukerens meldinger */
     [data-testid="stChatMessage"][aria-label="user"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        color: white !important;
-        border-left: 5px solid #ffd700 !important;
-        margin-left: 20px !important;
+        background: rgba(0, 255, 136, 0.05) !important;
+        border: 1px solid rgba(0, 255, 136, 0.2) !important;
+        color: #00ff88 !important;
+        border-left: 2px solid #00ff88 !important;
     }
-    
+
     /* Agentens meldinger */
     [data-testid="stChatMessage"][aria-label="assistant"] {
-        background: rgba(255,255,255,0.1) !important;
-        backdrop-filter: blur(10px) !important;
-        color: white !important;
-        border-left: 5px solid #00ff88 !important;
-        margin-right: 20px !important;
+        background: rgba(0, 0, 0, 0.8) !important;
+        border: 1px solid rgba(0, 255, 136, 0.1) !important;
+        color: #b0b0b0 !important;
+        border-left: 2px solid #555 !important;
     }
-    
+
     /* Sidebar */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%) !important;
-        border-right: 1px solid rgba(255,255,255,0.1) !important;
+        background: #0d0d0d !important;
+        border-right: 1px solid rgba(0, 255, 136, 0.1) !important;
     }
-    
-    /* Knapper */
+
+    /* Knapper - neon grønn */
     .stButton button {
-        border-radius: 25px !important;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        color: white !important;
-        font-weight: bold !important;
-        border: none !important;
-        transition: transform 0.3s ease !important;
+        border-radius: 0px !important;
+        background: transparent !important;
+        color: #00ff88 !important;
+        font-weight: 400 !important;
+        border: 1px solid #00ff88 !important;
+        font-family: 'Share Tech Mono', monospace !important;
+        text-transform: uppercase !important;
+        letter-spacing: 2px !important;
+        transition: all 0.2s ease !important;
     }
-    
+
     .stButton button:hover {
-        transform: scale(1.05) !important;
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4) !important;
+        background: #00ff88 !important;
+        color: #0a0a0a !important;
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.3) !important;
     }
-    
+
     /* Input-felt */
     .stTextInput input, .stChatInput input {
-        background: rgba(255,255,255,0.1) !important;
-        border: 1px solid rgba(255,255,255,0.2) !important;
-        color: white !important;
-        border-radius: 25px !important;
+        background: #0d0d0d !important;
+        border: 1px solid rgba(0, 255, 136, 0.2) !important;
+        color: #00ff88 !important;
+        border-radius: 0px !important;
+        font-family: 'Share Tech Mono', monospace !important;
     }
-    
+
+    .stTextInput input:focus, .stChatInput input:focus {
+        border-color: #00ff88 !important;
+        box-shadow: 0 0 10px rgba(0, 255, 136, 0.1) !important;
+    }
+
     /* Hovedtittel */
     h1 {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800 !important;
+        color: #00ff88 !important;
+        font-weight: 400 !important;
+        font-family: 'Share Tech Mono', monospace !important;
+        text-transform: uppercase !important;
+        letter-spacing: 4px !important;
+        font-size: 1.8em !important;
     }
-    
+
+    /* Undertittel */
+    .stCaption {
+        color: #555 !important;
+        font-family: 'Share Tech Mono', monospace !important;
+    }
+
     /* Nedlastingsknapp */
     .stDownloadButton button {
-        background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%) !important;
-        border-radius: 25px !important;
+        background: transparent !important;
+        color: #00ff88 !important;
+        border: 1px solid #00ff88 !important;
+        border-radius: 0px !important;
+        font-family: 'Share Tech Mono', monospace !important;
+        text-transform: uppercase !important;
     }
-    
-    /* Statuskort */
+
+    .stDownloadButton button:hover {
+        background: #00ff88 !important;
+        color: #0a0a0a !important;
+    }
+
+    /* Statuskort i sidebar */
     .status-card {
-        background: rgba(255,255,255,0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 15px;
+        background: rgba(0, 255, 136, 0.03);
+        border: 1px solid rgba(0, 255, 136, 0.15);
+        border-radius: 0px;
         padding: 15px;
         text-align: center;
-        color: white;
-        border: 1px solid rgba(255,255,255,0.2);
+        color: #00ff88;
+        font-family: 'Share Tech Mono', monospace;
     }
-    
+
     /* Velkomstboks */
     .welcome-box {
-        background: rgba(255,255,255,0.05);
-        backdrop-filter: blur(20px);
-        padding: 30px;
-        border-radius: 20px;
+        background: rgba(0, 255, 136, 0.02);
+        border: 1px solid rgba(0, 255, 136, 0.1);
+        clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+        padding: 25px;
         text-align: center;
-        border: 1px solid rgba(255,255,255,0.1);
         margin-bottom: 20px;
     }
-    
+
     /* Footer */
     .footer {
         text-align: center;
         padding: 20px;
-        color: rgba(255,255,255,0.5);
+        color: #333;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 0.8em;
+        letter-spacing: 1px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+        width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #0a0a0a;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #00ff88;
+        border-radius: 0px;
+    }
+
+    /* Sidetall og tekst */
+    p, li, label, .stMarkdown {
+        color: #999 !important;
+    }
+
+    /* Divider */
+    hr {
+        border-color: rgba(0, 255, 136, 0.1) !important;
+    }
+
+    /* Success/Info/Error bokser */
+    .stSuccess, .stInfo, .stError {
+        border-radius: 0px !important;
+        font-family: 'Share Tech Mono', monospace !important;
     }
 </style>
 """, unsafe_allow_html=True)
+
 
 # ========================================
 # VERKTØY
@@ -240,7 +316,7 @@ You MUST use tools for:
 - Send email: TOOL: send_epost(recipient, subject, message)
 - Calendar event: TOOL: kalender(title, date, time) - date YYYY-MM-DD, time HH:MM
 
-Reply ONLY with one TOOL: line if you need a tool."""
+Reply ONLY with one TOOL: line if you need a tool. Otherwise answer directly."""
 
 # ========================================
 # SIDEBAR
@@ -281,22 +357,22 @@ with st.sidebar:
 # ========================================
 # HOVEDVINDU
 # ========================================
+# Avatar (HTML-basert, ingen numpy-avhengighet)
+col1, col2, col3 = st.columns([1, 3, 1])
+with col2:
+    st.markdown("""
+    <div style="text-align: center;">
+        <img src="https://img.icons8.com/clouds/200/000000/robot.png"
+             style="width: 100px; border-radius: 50%; box-shadow: 0 8px 32px rgba(102,126,234,0.4);">
+    </div>
+    """, unsafe_allow_html=True)
+
 st.title("🤖 Min KI-Agent")
 st.caption("En intelligent assistent med 7 verktøy")
 
 # Velkomstmelding
 if "meldinger" not in st.session_state:
     st.session_state.meldinger = [{"role": "system", "content": SYSTEM_MELDING}]
-    st.markdown("""
-    <div class="welcome-box">
-        <h2>👋 Velkommen til din personlige KI-Agent!</h2>
-        <p style='color: rgba(255,255,255,0.8);'>Jeg kan hjelpe deg med:</p>
-        <p style='color: rgba(255,255,255,0.9); font-size: 1.1em;'>
-            🧮 <b>Matematikk</b> · 🌤️ <b>Vær</b> · 📚 <b>Wikipedia</b> · 📧 <b>E-post</b> · 📅 <b>Kalender</b> · 💾 <b>Lagring</b>
-        </p>
-        <p style='color: rgba(255,255,255,0.6);'><i>Skriv et spørsmål i chatten for å starte...</i></p>
-    </div>
-    """, unsafe_allow_html=True)
 
 # Vis meldinger
 for melding in st.session_state.meldinger:
@@ -313,92 +389,105 @@ if sporsmal := st.chat_input("💬 Skriv en melding..."):
         st.markdown(sporsmal)
     st.session_state.meldinger.append({"role": "user", "content": sporsmal})
 
-    with st.spinner("🤔 Tenker..."):
-        r = requests.post(URL, headers=HEADERS, json={
-            "model": MODEL,
-            "messages": st.session_state.meldinger,
-            "max_tokens": 1000
-        })
-        data = r.json()
+    # Skrivende animasjon
+    typing_placeholder = st.empty()
+    typing_placeholder.markdown("""
+    <div class="typing-indicator">
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <span style="color: rgba(255,255,255,0.7);">Agenten tenker...</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-        if "choices" in data:
-            svar = data["choices"][0]["message"]["content"]
+    r = requests.post(URL, headers=HEADERS, json={
+        "model": MODEL,
+        "messages": st.session_state.meldinger,
+        "max_tokens": 1000
+    })
+    data = r.json()
 
-            if "TOOL:" in svar:
-                for linje in svar.split("\n"):
-                    if "TOOL:" in linje:
-                        kall = linje.replace("TOOL:", "").strip()
+    # Fjern skrivende animasjon
+    typing_placeholder.empty()
+
+    if "choices" in data:
+        svar = data["choices"][0]["message"]["content"]
+
+        if "TOOL:" in svar:
+            for linje in svar.split("\n"):
+                if "TOOL:" in linje:
+                    kall = linje.replace("TOOL:", "").strip()
+                    with st.chat_message("assistant"):
+                        st.markdown(f"🔧 Bruker verktøy: `{kall}`")
+
+                    if "(" in kall and ")" in kall:
+                        navn_v = kall.split("(")[0].strip()
+                        arg = kall.split("(")[1].split(")")[0].strip().strip('\'"')
+                    else:
+                        navn_v = kall.strip()
+                        arg = ""
+
+                    if navn_v == "kalkulator":
+                        resultat = kalkulator(arg)
+                    elif navn_v == "dato":
+                        resultat = dato_og_tid()
+                    elif navn_v == "vaer":
+                        resultat = vaer(arg)
+                    elif navn_v == "wikipedia":
+                        resultat = sok_wikipedia(arg)
+                    elif navn_v == "lagre":
+                        deler = arg.split(",", 1)
+                        if len(deler) == 2:
+                            resultat = lagre_fil(deler[0].strip().strip('"'), deler[1].strip().strip('"'))
+                        else:
+                            resultat = "Feil format."
+                    elif navn_v == "send_epost":
+                        deler = arg.split(",", 2)
+                        if len(deler) == 3:
+                            resultat = send_epost(
+                                deler[0].strip().strip('"'),
+                                deler[1].strip().strip('"'),
+                                deler[2].strip().strip('"'),
+                                avsender=bruker_email,
+                                passord=bruker_passord
+                            )
+                        else:
+                            resultat = "Feil format."
+                    elif navn_v == "kalender":
+                        deler = arg.split(",", 2)
+                        if len(deler) == 3:
+                            resultat = legg_til_kalender(deler[0].strip(), deler[1].strip(), deler[2].strip())
+                        else:
+                            resultat = "Feil format. Bruk: kalender(tittel, YYYY-MM-DD, HH:MM)"
+                    else:
+                        resultat = f"Ukjent verktøy: {navn_v}"
+
+                    with st.chat_message("assistant"):
+                        st.markdown(f"📊 Resultat: `{resultat}`")
+
+                    st.session_state.meldinger.append({"role": "assistant", "content": svar})
+                    st.session_state.meldinger.append({"role": "user", "content": f"Verktøy-resultat: {resultat}\nSvar brukeren."})
+
+                    r2 = requests.post(URL, headers=HEADERS, json={
+                        "model": MODEL,
+                        "messages": st.session_state.meldinger,
+                        "max_tokens": 500
+                    })
+                    data2 = r2.json()
+                    if "choices" in data2:
+                        svar2 = data2["choices"][0]["message"]["content"]
                         with st.chat_message("assistant"):
-                            st.markdown(f"🔧 Bruker verktøy: `{kall}`")
-
-                        if "(" in kall and ")" in kall:
-                            navn_v = kall.split("(")[0].strip()
-                            arg = kall.split("(")[1].split(")")[0].strip().strip('\'"')
-                        else:
-                            navn_v = kall.strip()
-                            arg = ""
-
-                        if navn_v == "kalkulator":
-                            resultat = kalkulator(arg)
-                        elif navn_v == "dato":
-                            resultat = dato_og_tid()
-                        elif navn_v == "vaer":
-                            resultat = vaer(arg)
-                        elif navn_v == "wikipedia":
-                            resultat = sok_wikipedia(arg)
-                        elif navn_v == "lagre":
-                            deler = arg.split(",", 1)
-                            if len(deler) == 2:
-                                resultat = lagre_fil(deler[0].strip().strip('"'), deler[1].strip().strip('"'))
-                            else:
-                                resultat = "Feil format."
-                        elif navn_v == "send_epost":
-                            deler = arg.split(",", 2)
-                            if len(deler) == 3:
-                                resultat = send_epost(
-                                    deler[0].strip().strip('"'),
-                                    deler[1].strip().strip('"'),
-                                    deler[2].strip().strip('"'),
-                                    avsender=bruker_email,
-                                    passord=bruker_passord
-                                )
-                            else:
-                                resultat = "Feil format."
-                        elif navn_v == "kalender":
-                            deler = arg.split(",", 2)
-                            if len(deler) == 3:
-                                resultat = legg_til_kalender(deler[0].strip(), deler[1].strip(), deler[2].strip())
-                            else:
-                                resultat = "Feil format. Bruk: kalender(tittel, YYYY-MM-DD, HH:MM)"
-                        else:
-                            resultat = f"Ukjent verktøy: {navn_v}"
-
-                        with st.chat_message("assistant"):
-                            st.markdown(f"📊 Resultat: `{resultat}`")
-
-                        st.session_state.meldinger.append({"role": "assistant", "content": svar})
-                        st.session_state.meldinger.append({"role": "user", "content": f"Verktøy-resultat: {resultat}\nSvar brukeren."})
-
-                        r2 = requests.post(URL, headers=HEADERS, json={
-                            "model": MODEL,
-                            "messages": st.session_state.meldinger,
-                            "max_tokens": 500
-                        })
-                        data2 = r2.json()
-                        if "choices" in data2:
-                            svar2 = data2["choices"][0]["message"]["content"]
-                            with st.chat_message("assistant"):
-                                st.markdown(svar2)
-                            st.session_state.meldinger.append({"role": "assistant", "content": svar2})
-                        else:
-                            st.session_state.meldinger.append({"role": "assistant", "content": resultat})
-            else:
-                with st.chat_message("assistant"):
-                    st.markdown(svar)
-                st.session_state.meldinger.append({"role": "assistant", "content": svar})
+                            st.markdown(svar2)
+                        st.session_state.meldinger.append({"role": "assistant", "content": svar2})
+                    else:
+                        st.session_state.meldinger.append({"role": "assistant", "content": resultat})
         else:
             with st.chat_message("assistant"):
-                st.error(f"Feil: {data}")
+                st.markdown(svar)
+            st.session_state.meldinger.append({"role": "assistant", "content": svar})
+    else:
+        with st.chat_message("assistant"):
+            st.error(f"Feil: {data}")
 
 # Nedlastingsknapp for kalender
 if "ics_data" in st.session_state and st.session_state.ics_data:
@@ -413,8 +502,7 @@ if "ics_data" in st.session_state and st.session_state.ics_data:
         )
 
 # Footer
-st.markdown("---")
 st.markdown(
-    "<p class='footer'>Bygget med ❤️ | Drevet av Gemini 2.5 Flash via OpenRouter | Streamlit Cloud</p>",
+    "<p class='footer'>fra gzorn til deg 🚀</p>",
     unsafe_allow_html=True
 )
