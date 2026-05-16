@@ -8,13 +8,14 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+import speech_recognition as sr
+import tempfile
 
 load_dotenv()
 
 # ========================================
 # KONFIGURASJON
 # ========================================
-# Prioriter: 1) st.secrets (Streamlit Cloud), 2) os.environ (lokal .env)
 API_KEY = st.secrets.get("OPENROUTER_API_KEY") or os.environ.get("OPENROUTER_API_KEY", "")
 MODEL = "google/gemini-2.5-flash"
 URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -24,7 +25,7 @@ HEADERS = {
 }
 
 # ========================================
-# SIDEOppsett
+# SIDEOppsett + Streamlit Mørkt Tema
 # ========================================
 st.set_page_config(
     page_title="Min KI-Agent 🤖",
@@ -32,189 +33,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-
-# ========================================
-# CSS-STYLING (MINIMALISTISK CYBERPUNK)
-# ========================================
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
-    /* Hovedbakgrunn - dyp svart */
-    .stApp {
-        background: #0a0a0a;
-    }
-
-    /* Grid-linjer i bakgrunnen (cyberpunk-signatur) */
-    .stApp::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: 
-            linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
-        background-size: 40px 40px;
-        pointer-events: none;
-        z-index: 0;
-    }
-
-    /* Chat-meldinger */
-    .stChatMessage {
-        border-radius: 0px !important;
-        clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
-    }
-
-    /* Brukerens meldinger */
-    [data-testid="stChatMessage"][aria-label="user"] {
-        background: rgba(0, 255, 136, 0.05) !important;
-        border: 1px solid rgba(0, 255, 136, 0.2) !important;
-        color: #00ff88 !important;
-        border-left: 2px solid #00ff88 !important;
-    }
-
-    /* Agentens meldinger */
-    [data-testid="stChatMessage"][aria-label="assistant"] {
-        background: rgba(0, 0, 0, 0.8) !important;
-        border: 1px solid rgba(0, 255, 136, 0.1) !important;
-        color: #b0b0b0 !important;
-        border-left: 2px solid #555 !important;
-    }
-
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background: #0d0d0d !important;
-        border-right: 1px solid rgba(0, 255, 136, 0.1) !important;
-    }
-
-    /* Knapper - neon grønn */
-    .stButton button {
-        border-radius: 0px !important;
-        background: transparent !important;
-        color: #00ff88 !important;
-        font-weight: 400 !important;
-        border: 1px solid #00ff88 !important;
-        font-family: 'Share Tech Mono', monospace !important;
-        text-transform: uppercase !important;
-        letter-spacing: 2px !important;
-        transition: all 0.2s ease !important;
-    }
-
-    .stButton button:hover {
-        background: #00ff88 !important;
-        color: #0a0a0a !important;
-        box-shadow: 0 0 20px rgba(0, 255, 136, 0.3) !important;
-    }
-
-    /* Input-felt */
-    .stTextInput input, .stChatInput input {
-        background: #0d0d0d !important;
-        border: 1px solid rgba(0, 255, 136, 0.2) !important;
-        color: #00ff88 !important;
-        border-radius: 0px !important;
-        font-family: 'Share Tech Mono', monospace !important;
-    }
-
-    .stTextInput input:focus, .stChatInput input:focus {
-        border-color: #00ff88 !important;
-        box-shadow: 0 0 10px rgba(0, 255, 136, 0.1) !important;
-    }
-
-    /* Hovedtittel */
-    h1 {
-        color: #00ff88 !important;
-        font-weight: 400 !important;
-        font-family: 'Share Tech Mono', monospace !important;
-        text-transform: uppercase !important;
-        letter-spacing: 4px !important;
-        font-size: 1.8em !important;
-    }
-
-    /* Undertittel */
-    .stCaption {
-        color: #555 !important;
-        font-family: 'Share Tech Mono', monospace !important;
-    }
-
-    /* Nedlastingsknapp */
-    .stDownloadButton button {
-        background: transparent !important;
-        color: #00ff88 !important;
-        border: 1px solid #00ff88 !important;
-        border-radius: 0px !important;
-        font-family: 'Share Tech Mono', monospace !important;
-        text-transform: uppercase !important;
-    }
-
-    .stDownloadButton button:hover {
-        background: #00ff88 !important;
-        color: #0a0a0a !important;
-    }
-
-    /* Statuskort i sidebar */
-    .status-card {
-        background: rgba(0, 255, 136, 0.03);
-        border: 1px solid rgba(0, 255, 136, 0.15);
-        border-radius: 0px;
-        padding: 15px;
-        text-align: center;
-        color: #00ff88;
-        font-family: 'Share Tech Mono', monospace;
-    }
-
-    /* Velkomstboks */
-    .welcome-box {
-        background: rgba(0, 255, 136, 0.02);
-        border: 1px solid rgba(0, 255, 136, 0.1);
-        clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
-        padding: 25px;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    /* Footer */
-    .footer {
-        text-align: center;
-        padding: 20px;
-        color: #333;
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 0.8em;
-        letter-spacing: 1px;
-    }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-        width: 4px;
-    }
-    ::-webkit-scrollbar-track {
-        background: #0a0a0a;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #00ff88;
-        border-radius: 0px;
-    }
-
-    /* Sidetall og tekst */
-    p, li, label, .stMarkdown {
-        color: #999 !important;
-    }
-
-    /* Divider */
-    hr {
-        border-color: rgba(0, 255, 136, 0.1) !important;
-    }
-
-    /* Success/Info/Error bokser */
-    .stSuccess, .stInfo, .stError {
-        border-radius: 0px !important;
-        font-family: 'Share Tech Mono', monospace !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 
 # ========================================
 # VERKTØY
@@ -286,7 +104,6 @@ def legg_til_kalender(tittel, dato, tid):
         time_delt = tid.split(":")
         slutt_time = int(time_delt[0]) + 1
         slutt_tid = f"{slutt_time:02d}:{time_delt[1]}"
-        
         ics = f"""BEGIN:VCALENDAR
 VERSION:2.0
 BEGIN:VEVENT
@@ -295,7 +112,6 @@ DTEND:{dato.replace('-','')}T{slutt_tid.replace(':','')}00
 SUMMARY:{tittel}
 END:VEVENT
 END:VCALENDAR"""
-        
         st.session_state.ics_data = ics
         st.session_state.ics_filnavn = f"{tittel.replace(' ','_')}.ics"
         return f"✅ Kalenderfil '{st.session_state.ics_filnavn}' klar for nedlasting!"
@@ -319,12 +135,38 @@ You MUST use tools for:
 Reply ONLY with one TOOL: line if you need a tool. Otherwise answer directly."""
 
 # ========================================
+# TALEGJENKJENNING (for web-app)
+# ========================================
+def speech_to_text(audio_bytes):
+    """Konverterer lydopptak til tekst via Google Speech Recognition"""
+    try:
+        # Lagre lydopptak midlertidig
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+            tmp.write(audio_bytes)
+            tmp_path = tmp.name
+        
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(tmp_path) as source:
+            audio = recognizer.record(source)
+        
+        # Slett midlertidig fil
+        os.unlink(tmp_path)
+        
+        # Send til Google for talegjenkjenning
+        tekst = recognizer.recognize_google(audio, language="en-US")
+        return tekst
+    except sr.UnknownValueError:
+        return None
+    except Exception as e:
+        st.error(f"Kunne ikke gjenkjenne tale: {e}")
+        return None
+
+# ========================================
 # SIDEBAR
 # ========================================
 with st.sidebar:
-    st.markdown("<h2 style='text-align: center; color: white;'>⚙️ Kontrollpanel</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>⚙️ Kontrollpanel</h2>", unsafe_allow_html=True)
     
-    # Statuskort
     st.markdown("""
     <div class="status-card">
         <h3>🟢 Agent Online</h3>
@@ -335,7 +177,7 @@ with st.sidebar:
     
     st.divider()
     
-    st.markdown("<h3 style='color: white;'>📧 E-post (valgfritt)</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>📧 E-post (valgfritt)</h3>", unsafe_allow_html=True)
     bruker_email = st.text_input("Din Gmail", placeholder="deg@gmail.com", key="email_input")
     bruker_passord = st.text_input("App-passord", placeholder="16 tegn", type="password", key="pass_input")
     st.caption("[Lage app-passord](https://myaccount.google.com/apppasswords)")
@@ -345,34 +187,33 @@ with st.sidebar:
     
     st.divider()
     
-    st.markdown("<h3 style='color: white;'>📅 Kalender</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>📅 Kalender</h3>", unsafe_allow_html=True)
     st.caption("Lager ICS-fil for alle kalendere")
     st.success("✅ Kalender klar!")
     
     st.divider()
     
-    st.markdown("<p style='color: rgba(255,255,255,0.7); font-size: 0.9em;'>🛠️ Verktøy:</p>", unsafe_allow_html=True)
-    st.markdown("<p style='color: rgba(255,255,255,0.5); font-size: 0.8em;'>Kalkulator · Dato · Vær · Wikipedia · Lagring · E-post · Kalender</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 0.9em;'>🛠️ Verktøy:</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 0.8em;'>Kalkulator · Dato · Vær · Wikipedia · Lagring · E-post · Kalender</p>", unsafe_allow_html=True)
 
 # ========================================
 # HOVEDVINDU
 # ========================================
-# Avatar (HTML-basert, ingen numpy-avhengighet)
-col1, col2, col3 = st.columns([1, 3, 1])
-with col2:
-    st.markdown("""
-    <div style="text-align: center;">
-        <img src="https://img.icons8.com/clouds/200/000000/robot.png"
-             style="width: 100px; border-radius: 50%; box-shadow: 0 8px 32px rgba(102,126,234,0.4);">
-    </div>
-    """, unsafe_allow_html=True)
-
 st.title("🤖 Min KI-Agent")
-st.caption("En intelligent assistent med 7 verktøy")
+st.caption("En intelligent assistent med 7 verktøy • fra gzorn til deg 🚀")
 
 # Velkomstmelding
 if "meldinger" not in st.session_state:
     st.session_state.meldinger = [{"role": "system", "content": SYSTEM_MELDING}]
+    st.markdown("""
+    <div class="welcome-box">
+        <h2>👋 Velkommen til din personlige KI-Agent!</h2>
+        <p style='font-size: 1.1em;'>
+            🧮 <b>Matematikk</b> · 🌤️ <b>Vær</b> · 📚 <b>Wikipedia</b> · 📧 <b>E-post</b> · 📅 <b>Kalender</b> · 💾 <b>Lagring</b>
+        </p>
+        <p><i>Skriv et spørsmål eller bruk 🎤 for å snakke...</i></p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Vis meldinger
 for melding in st.session_state.meldinger:
@@ -383,32 +224,41 @@ for melding in st.session_state.meldinger:
         with st.chat_message("assistant"):
             st.markdown(melding["content"])
 
-# Håndter ny brukerinput
-if sporsmal := st.chat_input("💬 Skriv en melding..."):
+# ========================================
+# TO INPUT-METODER: Skriv ELLER Snakk
+# ========================================
+col1, col2 = st.columns([5, 1])
+
+with col1:
+    sporsmal = st.chat_input("💬 Skriv en melding...")
+
+with col2:
+    lydopptak = st.audio_input("🎤")
+
+# Håndter lydopptak
+if lydopptak is not None:
+    with st.spinner("🎤 Lytter..."):
+        tekst = speech_to_text(lydopptak)
+    
+    if tekst:
+        sporsmal = tekst
+        st.success(f"Oppfattet: {tekst}")
+    else:
+        st.warning("Kunne ikke oppfatte tale. Prøv igjen.")
+
+# Håndter spørsmål (fra tekst eller tale)
+if sporsmal:
     with st.chat_message("user"):
         st.markdown(sporsmal)
     st.session_state.meldinger.append({"role": "user", "content": sporsmal})
 
-    # Skrivende animasjon
-    typing_placeholder = st.empty()
-    typing_placeholder.markdown("""
-    <div class="typing-indicator">
-    <div class="typing-dot"></div>
-    <div class="typing-dot"></div>
-    <div class="typing-dot"></div>
-    <span style="color: rgba(255,255,255,0.7);">Agenten tenker...</span>
-    </div>
-    """, unsafe_allow_html=True)
-
-    r = requests.post(URL, headers=HEADERS, json={
-        "model": MODEL,
-        "messages": st.session_state.meldinger,
-        "max_tokens": 1000
-    })
-    data = r.json()
-
-    # Fjern skrivende animasjon
-    typing_placeholder.empty()
+    with st.spinner("🤔 Tenker..."):
+        r = requests.post(URL, headers=HEADERS, json={
+            "model": MODEL,
+            "messages": st.session_state.meldinger,
+            "max_tokens": 1000
+        })
+        data = r.json()
 
     if "choices" in data:
         svar = data["choices"][0]["message"]["content"]
@@ -502,6 +352,7 @@ if "ics_data" in st.session_state and st.session_state.ics_data:
         )
 
 # Footer
+st.markdown("---")
 st.markdown(
     "<p class='footer'>fra gzorn til deg 🚀</p>",
     unsafe_allow_html=True
